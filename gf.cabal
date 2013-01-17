@@ -162,6 +162,7 @@ executable gf
     GF.System.Console
     GF.System.Signal
     GF.Command.Commands
+    GF.Command.PG_lttoolbox
     GF.Command.Interpreter
     GF.Command.Abstract
     GF.Command.Parse
@@ -240,7 +241,12 @@ Test-Suite test-unittests
                  HUnit,
                  test-framework,
                  test-framework-hunit,
-                 containers
-  hs-source-dirs: src/testsuite src/compiler
+                 containers,
+                 pretty,
+                 bytestring,
+                 array
+  hs-source-dirs: src/testsuite src/compiler src/runtime/haskell
   other-modules:
     GF.Utils
+    GF.Command.PG_lttoolbox
+    PGF.CId
