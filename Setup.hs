@@ -26,7 +26,6 @@ main = defaultMainWithHooks simpleUserHooks{ preBuild =gfPreBuild
                                            , preCopy  =const . checkRGLArgs
                                            , postCopy =gfPostCopy
                                            , sDistHook=sdistRGL
-                                           , runTests =testRGL
                                            }
   where
     gfPreBuild args  = gfPre args . buildDistPref
