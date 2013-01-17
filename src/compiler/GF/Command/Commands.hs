@@ -1286,7 +1286,8 @@ allCommands = Map.fromList [
      | isOpt "langs"    opts = return $ fromString $ unwords $ map showCId $ languages pgf
 
      | isOpt "lexc"     opts = return $ fromString $ concatMap (morpho mos "" prLexcLexicon) $ optLangs pgf opts
-     | isOpt "lttoolbox"     opts = return $ fromString $ concatMap (morpho mos "" prLttoolboxLexicon) $ optLangs pgf opts
+     | isOpt "lttoolbox" opts = return $ fromString $ concatMap prLttoolboxLexicon       
+        [buildMorphoWithMWE pgf l | l <- optLangs pgf opts]
      | isOpt "missing"  opts = return $ fromString $ unlines $ [unwords (showCId la:":": map showCId cs) |
                                                                   la <- optLangs pgf opts, let cs = missingLins pgf la]
      | isOpt "words" opts = return $ fromString $ concatMap (morpho mos "" prAllWords) $ optLangs pgf opts
