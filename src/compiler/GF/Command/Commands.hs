@@ -51,7 +51,9 @@ import Text.PrettyPrint
 import Data.List (sort)
 import Debug.Trace
 --import System.Random (newStdGen) ----
+import Text.Printf (printf)
 
+import GF.Utils (replace, uniq)
 
 type PGFEnv = (PGF, Map.Map Language Morpho)
 
@@ -634,6 +636,7 @@ allCommands = Map.fromList [
        ("funs",   "show just the names and types of abstract syntax functions"),
        ("langs",  "show just the names of top concrete syntax modules"),
        ("lexc", "print the lexicon in Xerox LEXC format"),
+       ("lttoolbox", "print the lexicon in lttoolbox (apertium) format"),
        ("missing","show just the names of functions that have no linearization"),
        ("opt",    "optimize the generated pgf"),
        ("pgf",    "write current pgf image in file"),
@@ -1282,6 +1285,7 @@ allCommands = Map.fromList [
      | isOpt "langs"    opts = return $ fromString $ unwords $ map showCId $ languages pgf
 
      | isOpt "lexc"     opts = return $ fromString $ concatMap (morpho mos "" prLexcLexicon) $ optLangs pgf opts
+     | isOpt "lttoolbox"     opts = return $ fromString $ concatMap (morpho mos "" prLttoolboxLexicon) $ optLangs pgf opts
      | isOpt "missing"  opts = return $ fromString $ unlines $ [unwords (showCId la:":": map showCId cs) |
                                                                   la <- optLangs pgf opts, let cs = missingLins pgf la]
      | isOpt "words" opts = return $ fromString $ concatMap (morpho mos "" prAllWords) $ optLangs pgf opts
@@ -1369,6 +1373,90 @@ prLexcLexicon mo =
   mkTags p = case p of
     "s":ws -> mkTags ws   --- remove record field
     ws -> concat $ "+" : intersperse "+" ws
+
+-- | This function export the GF grammar as a dictionaly in the format
+-- expected by the lttoolbox tool suite (part of apertium)
+-- Here is an example of lttoolbox file:
+--   <dictionary>
+--     <sdefs>
+--       <sdef n="n"/>
+--       <sdef n="pl"/>
+--       <sdef n="sg"/>
+--     </sdefs>
+--     <pardefs> 
+--       <pardef n="RegNounInfl">
+--         <e><p><l/><r><s n="n"/><s n="sg"/></r></p></e>
+--         <e><p><l>s</l><r><s n="n"/><s n="pl"/></r></p></e>
+--       </pardef>
+--     </pardefs>
+--     <section id="Root" type="standard">
+--       <e lm="cat"><i>cat</i><par n="RegNounInfl"/></e> <!-- A noun -->
+--     </section>
+--   </dictionary>
+prLttoolboxLexicon :: Morpho -> String
+prLttoolboxLexicon mo = unlines $ 
+  [ "<?xml version=\"1.0\"?>"
+  , "<!DOCTYPE dictionary SYSTEM \"http://www.apertium.org/dtd/dix.dtd\">"
+  , "<dictionary>" ] ++
+  [ "<sdefs>" ] ++ map mkSdef tags ++ map mkSdef partOfSpeechs ++ [ "</sdefs>" ] ++
+  [ "<section id=\"main\" type=\"standard\">" ] ++ entries ++ [ "</section>" ] ++
+  [ "</dictionary>" ]
+ where
+  tags :: [String]
+  tags = uniq $ do
+    (_,lps) <- fullFormLexicon mo
+    (lemma,p) <- lps
+    cleanTags p
+  partOfSpeechs :: [String]
+  partOfSpeechs = uniq $ do
+    (_,lps) <- fullFormLexicon mo
+    (lemma,_) <- lps
+    getPartOfSpeech (showCId lemma)
+  mkSdef :: String -> String -- creates a XML tag like <sdef n="n"/>
+  mkSdef = printf "<sdef n=\"%s\"/>" . cdata
+
+  mkEntry :: String -> String -> [String] -> String
+    -- creates a XML tag like <e><l>cats</l><r>cat_N<s n="Pl"></r></e>
+  mkEntry form lemma tags = 
+    printf "<e><p><l>%s</l><r>%s%s</r></p></e>" (cdata form) (cdata lemma) 
+           (concatMap (printf "<s n=\"%s\"/>" . cdata) tags::String)
+  entries :: [String]
+  entries = do
+    (form,lps) <- fullFormLexicon mo
+    (lemma,analysis) <- lps
+    let pos = getPartOfSpeech (showCId lemma)
+    let tags = pos ++ cleanTags analysis
+    return $ mkEntry form (showCId lemma) tags
+
+  -- This expects the lemma to be in the form xxxxxxxxx_PoS 
+  -- (where PoS is the part of speech.) If so, it returns the later.
+  getPartOfSpeech :: (Monad m) => String -> m String
+  getPartOfSpeech s = do
+    case split (reverse s) '_' of
+      a:b:_ -> return $ reverse a
+      _ -> fail []
+
+  -- Sanitize a string to be used as cdata in XML
+  cdata :: String -> String
+  cdata = replace "&" "&amp;"
+  
+  -- cleanTags takes a GF analysis and convert it in a list of tags
+  -- by spliting it and removing the parentheses
+  cleanTags :: String -> [String]
+  cleanTags s = do
+    tag <- words s
+    let clean_tag = replace "(" "" $ replace ")" "" $ tag
+    case clean_tag of
+      "s" -> fail "s is not an interesting tag"
+      t -> return t
+  split :: String -> Char -> [String]
+  split [] delim = [""]
+  split (c:cs) delim
+        | c == delim = "" : rest
+        | otherwise = (c : head rest) : tail rest
+   where
+       rest = split cs delim
+
 
 prFullFormLexicon :: Morpho -> String
 prFullFormLexicon mo =
