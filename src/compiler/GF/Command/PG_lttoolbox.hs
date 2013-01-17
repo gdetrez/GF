@@ -50,8 +50,9 @@ prLttoolboxLexicon mo = unlines $
   mkEntry :: String -> String -> [String] -> String
     -- creates a XML tag like <e><l>cats</l><r>cat_N<s n="Pl"></r></e>
   mkEntry form lemma tags = 
-    printf "<e><p><l>%s</l><r>%s%s</r></p></e>" (cdata form) (cdata lemma) 
+    printf "<e><p><l>%s</l><r>%s%s</r></p></e>" (cdata form') (cdata lemma)
            (concatMap (printf "<s n=\"%s\"/>" . cdata) tags::String)
+    where form' = replace " " "<b/>" form
   entries :: [String]
   entries = do
     (form,lps) <- fullFormLexicon mo
