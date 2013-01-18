@@ -80,5 +80,5 @@ prLttoolboxLexicon mo = unlines $
 getPartOfSpeech :: (Monad m) => String -> m String
 getPartOfSpeech s = do
   case split (reverse s) '_' of
-    a:b:_ -> if length a > 0 then return (reverse a) else fail []
+    a:b:_ -> if (length a > 0) && (length b > 0) then return (reverse a) else fail []
     _ -> fail []
