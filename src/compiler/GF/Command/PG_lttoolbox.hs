@@ -3,7 +3,7 @@ module GF.Command.PG_lttoolbox where
 
 import PGF.Morphology
 import Text.Printf (printf)
-import GF.Utils (split,uniq,replace)
+import GF.Data.Utilities (splitOn,uniq,subReplace)
 import PGF.CId (showCId)
 
 -- | This function export the GF grammar as a dictionaly in the format
@@ -52,7 +52,7 @@ prLttoolboxLexicon mo = unlines $
   mkEntry form lemma tags = 
     printf "<e><p><l>%s</l><r>%s%s</r></p></e>" (cdata form') (cdata lemma)
            (concatMap (printf "<s n=\"%s\"/>" . cdata) tags::String)
-    where form' = replace " " "<b/>" form
+    where form' = subReplace " " "<b/>" form
   entries :: [String]
   entries = do
     (form,lps) <- fullFormLexicon mo
@@ -63,14 +63,14 @@ prLttoolboxLexicon mo = unlines $
 
   -- Sanitize a string to be used as cdata in XML
   cdata :: String -> String
-  cdata = replace "&" "&amp;"
+  cdata = subReplace "&" "&amp;"
   
   -- cleanTags takes a GF analysis and convert it in a list of tags
   -- by spliting it and removing the parentheses
   cleanTags :: String -> [String]
   cleanTags s = do
     tag <- words s
-    let clean_tag = replace "(" "" $ replace ")" "" $ tag
+    let clean_tag = subReplace "(" "" $ subReplace ")" "" tag
     case clean_tag of
       "s" -> fail "s is not an interesting tag"
       t -> return t
@@ -78,7 +78,8 @@ prLttoolboxLexicon mo = unlines $
 -- This expects the lemma to be in the form xxxxxxxxx_PoS 
 -- (where PoS is the part of speech.) If so, it returns the later.
 getPartOfSpeech :: (Monad m) => String -> m String
-getPartOfSpeech s = do
-  case split (reverse s) '_' of
-    a:b:_ -> if (length a > 0) && (length b > 0) then return (reverse a) else fail []
-    _ -> fail []
+getPartOfSpeech s =
+  case splitOn '_' (reverse s) of
+    (_,[]) -> fail []
+    ([],_) -> fail []
+    (a,b) -> return (reverse a)

@@ -247,6 +247,6 @@ Test-Suite test-unittests
                  array
   hs-source-dirs: src/testsuite src/compiler src/runtime/haskell
   other-modules:
-    GF.Utils
+    GF.Data.Utilities
     GF.Command.PG_lttoolbox
     PGF.CId

@@ -52,9 +52,6 @@ import Text.PrettyPrint
 import Data.List (sort)
 import Debug.Trace
 --import System.Random (newStdGen) ----
-import Text.Printf (printf)
-
-import GF.Utils (replace, uniq)
 
 type PGFEnv = (PGF, Map.Map Language Morpho)
 

@@ -120,6 +120,33 @@ compareEq f x y = case f x y of
                              EQ -> True
                              _ -> False
 
+-- | Replace a sub-list with an other one.
+-- this is a basic implementation of a string 
+-- search and replace function
+subReplace :: (Eq a) => [a] -> [a] -> [a] -> [a]
+subReplace  _ _ [] = []
+subReplace before after xs@(a:as) 
+  | isPrefixOf before xs = after ++ subReplace before after (drop (length before) xs)
+  | otherwise            = a : subReplace before after as
+
+
+-- | it returns the input list without duplicates like the unix function
+-- with the same name. But instead of removing only consecutive duplicates,
+-- it remove all of them)
+uniq :: Ord a => [a] -> [a]
+uniq = Set.toList . Set.fromList
+
+
+-- | Splits a list according to an item
+splitOn :: (Eq a) => a -> [a] -> ([a],[a])
+splitOn _ [] = ([],[])
+splitOn delim (c:cs)
+      | c == delim = ([], cs)
+      | otherwise = ((c : s1), s2)
+ where
+   (s1,s2) = splitOn delim cs
+
+
 -- * ordering functions
 
 compareBy :: Ord b => (a -> b) -> a -> a -> Ordering
